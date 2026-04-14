@@ -1,0 +1,125 @@
+# phoenix-2014t_s2g_mediapipe.yaml
+# ====================================================
+# Config này dùng cho inference / finetune với keypoints
+# trích xuất bằng MediaPipe (V=553) thay vì HRNet (V=133).
+#
+# Gloss vocab: Phoenix-2014T (1094 classes) — giữ nguyên
+# Keypoint indices: MediaPipe layout
+#   [0  – 32 ] Pose         (33 pts)
+#   [33 – 53 ] Left hand    (21 pts)
+#   [54 – 74 ] Right hand   (21 pts)
+#   [75 – 552] Face         (478 pts, refine_landmarks=True)
+#
+# Số node mỗi stream khớp với HRNet config để dùng cùng checkpoint:
+#   body=79, left=27, right=27, face=26
+# ====================================================
+task: S2G
+device: cuda
+do_translation: False
+do_recognition: True
+data:
+  train_label_path: data/Phoenix-2014T/Phoenix-2014T.train
+  dev_label_path: data/Phoenix-2014T/Phoenix-2014T.dev
+  test_label_path: data/Phoenix-2014T/Phoenix-2014T.test
+  max_length: 300
+  dataset_name: Phoenix-2014T
+  input_streams: keypoint
+  level: word
+  txt_lowercase: true
+  max_sent_length: 400
+
+gloss:
+  gloss2id_file: data/Phoenix-2014T/gloss2ids.pkl
+testing:
+  recognition:
+    beam_size: 5
+  translation: {}
+training:
+  wandb: disabled
+  model_dir: outputs/Phoenix-2014T_SLR_mediapipe
+  validation:
+    recognition:
+      beam_size: 1
+    translation: {}
+  optimization:
+    optimizer: Adam
+    learning_rate:
+      default: 1.0e-3
+    weight_decay: 0.001
+    betas:
+      - 0.9
+      - 0.998
+    scheduler: cosineannealing
+    t_max: 100
+model:
+  RecognitionNetwork:
+    input_type: keypoint
+    DSTA-Net:
+      net: [[64, 64, 16, 7, 2], [64, 64, 16, 3, 1],
+            [64, 128, 32, 3, 1], [128, 128, 32, 3, 1],
+            [128, 256, 64, 3, 2], [256, 256, 64, 3, 1],
+            [256, 256, 64, 3, 1], [256, 256, 64, 3, 1],]
+      # ── body (79 nodes) ──────────────────────────────────────────
+      # Bên trái: nose(0) + eye-L(548) + eye-L(529) + shoulder(11) + elbow(13) + wrist(15) + lhand(21)
+      # Bên phải: nose(0) + eye-R(543) + eye-R(309) + shoulder(12) + elbow(14) + wrist(16) + rhand(21)
+      # Mặt: 26 điểm đại diện (mắt, miệng, má, mũi)
+      body: [0, 548, 529, 11, 13, 15,
+             33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
+             543, 309, 12, 14, 16,
+             54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
+             202, 290, 224, 453, 510, 431,
+             138, 141, 371, 368, 79, 77,
+             205, 248, 473, 434,
+             260, 114, 112, 75, 342, 344, 484,
+             480, 92, 256]
+      # ── left stream (27 nodes) ───────────────────────────────────
+      # nose + 2 eye-L keypoints + shoulder + elbow + wrist + 21 left-hand
+      left: [0, 548, 529, 11, 13, 15,
+             33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+      # ── right stream (27 nodes) ──────────────────────────────────
+      # nose + 2 eye-R keypoints + shoulder + elbow + wrist + 21 right-hand
+      right: [0, 543, 309, 12, 14, 16,
+              54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74]
+      # ── face stream (26 nodes) ───────────────────────────────────
+      # Các điểm đại diện: viền mắt, lông mày, miệng, má, mũi, cằm
+      face: [202, 290, 224, 453, 510, 431,
+             138, 141, 371, 368, 79, 77,
+             205, 248, 473, 434,
+             260, 114, 112, 75, 342, 344, 484,
+             480, 92, 256]
+      mouth: [260, 114, 112, 75, 342, 344, 484, 480, 92, 256]
+    GlossTokenizer:
+      gloss2id_file: data/Phoenix-2014T/gloss2ids.pkl
+    body_visual_head:
+      input_size: 256
+      hidden_size: 512
+      ff_size: 2048
+      pe: True
+      ff_kernelsize:
+        - 3
+        - 3
+    fuse_visual_head:
+      input_size: 1024
+      hidden_size: 512
+      ff_size: 2048
+      pe: True
+      ff_kernelsize:
+        - 3
+        - 3
+    left_visual_head:
+      input_size: 512
+      hidden_size: 512
+      ff_size: 2048
+      pe: True
+      ff_kernelsize:
+        - 3
+        - 3
+    right_visual_head:
+      input_size: 512
+      hidden_size: 512
+      ff_size: 2048
+      pe: True
+      ff_kernelsize:
+        - 3
+        - 3
+    cross_distillation: True
