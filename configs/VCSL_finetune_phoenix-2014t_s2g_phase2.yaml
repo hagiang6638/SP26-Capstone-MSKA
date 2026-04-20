@@ -3,9 +3,9 @@ device: cuda
 do_translation: False
 do_recognition: True
 data:
-  train_label_path: data/Vietnamese-SL/VCSL.train.pkl
-  dev_label_path: data/Vietnamese-SL/VCSL.dev.pkl
-  test_label_path: data/Vietnamese-SL/VCSL.test.pkl
+  train_label_path: data/VCSL/VCSL.train.pkl
+  dev_label_path: data/VCSL/VCSL.dev.pkl
+  test_label_path: data/VCSL/VCSL.test.pkl
   max_length: 300
   dataset_name: VCSL
   input_streams: keypoint
