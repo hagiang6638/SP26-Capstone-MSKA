@@ -3,11 +3,11 @@ device: cuda
 do_translation: False
 do_recognition: True
 data:
-  train_label_path: data/Vietnamese-SL/VietNamese-SL.train.pkl
-  dev_label_path: data/Vietnamese-SL/VietNamese-SL.dev.pkl
-  test_label_path: data/Vietnamese-SL/VietNamese-SL.test.pkl
+  train_label_path: data/Vietnamese-SL/VCSL.train.pkl
+  dev_label_path: data/Vietnamese-SL/VCSL.dev.pkl
+  test_label_path: data/Vietnamese-SL/VCSL.test.pkl
   max_length: 300
-  dataset_name: Vietnamese-SL
+  dataset_name: VCSL
   input_streams: keypoint
   level: word #word or char
   txt_lowercase: true
@@ -20,8 +20,8 @@ testing:
     beam_size: 5
   translation: {}
 training:
-  wandb: online # online or disabled
-  model_dir: outputs/vietnamese-sl_phase2
+  wandb: disabled # online or disabled
+  model_dir: outputs/Phoenix-2014T_SLR_finetune
   validation:
     recognition:
       beam_size: 1
@@ -29,7 +29,7 @@ training:
   optimization:
     optimizer: Adam
     learning_rate:
-      default: 1.0e-5
+      default: 1.0e-4
     weight_decay: 0.001
     betas:
       - 0.9
@@ -39,7 +39,7 @@ training:
 model:
   RecognitionNetwork:
     input_type: keypoint
-    freeze_backbone: false
+    freeze_backbone: true
 
     pretrained: experiments/phoenix-2014t_s2g/best.pth
     load_pretrained: true
@@ -70,7 +70,7 @@ model:
       mouth: [260, 114, 112, 75, 342, 344, 484, 480, 92, 256]
       
     GlossTokenizer:
-      gloss2id_file: data/Vietnamese-SL/gloss2ids.pkl
+      gloss2id_file: data/VCSL/gloss2ids.pkl
     body_visual_head:
       input_size: 256
       hidden_size: 512
