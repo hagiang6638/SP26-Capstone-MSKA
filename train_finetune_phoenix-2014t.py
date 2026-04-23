@@ -209,6 +209,12 @@ def main(args, config):
                 'scheduler': scheduler.state_dict(),
                 'epoch': epoch,
             }, checkpoint_path)
+        train_eval_stats = evaluate(args, config, train_dataloader, model, tokenizer, epoch,
+                                    beam_size=config['training']['validation']['recognition']['beam_size'],
+                                    generate_cfg=config['training']['validation']['translation'],
+                                    do_translation=False, do_recognition=config['do_recognition'], is_train=True)
+        print(f"* TRAIN wer {train_eval_stats['wer']:.3f} | TRAIN loss {train_eval_stats['loss']:.3f}")
+
         test_stats = evaluate(args, config, dev_dataloader, model, tokenizer, epoch,
                               beam_size=config['training']['validation']['recognition']['beam_size'],
                               generate_cfg=config['training']['validation']['translation'],
@@ -306,7 +312,7 @@ def train_one_epoch(args, model: torch.nn.Module, criterion,
 
 
 def evaluate(args, config, dev_dataloader, model, tokenizer, epoch, beam_size=1, generate_cfg={}, do_translation=True,
-             do_recognition=True):
+             do_recognition=True, is_train=False):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
@@ -326,11 +332,16 @@ def evaluate(args, config, dev_dataloader, model, tokenizer, epoch, beam_size=1,
                                                                          input_lengths=output['input_lengths'])
                     batch_pred_gls = tokenizer.convert_ids_to_tokens(ctc_decode_output)
                     for name, gls_hyp, gls_ref in zip(src_input['name'], batch_pred_gls, src_input['gloss']):
-                        results[name][f'{logits_name}gls_hyp'] = \
-                            ' '.join(gls_hyp).upper() if tokenizer.lower_case \
-                                else ' '.join(gls_hyp)
-                        results[name]['gls_ref'] = gls_ref.upper() if tokenizer.lower_case \
-                            else gls_ref
+                        hyp_str = ' '.join(gls_hyp).upper() if tokenizer.lower_case else ' '.join(gls_hyp)
+                        ref_str = gls_ref.upper() if tokenizer.lower_case else gls_ref
+                        
+                        if step == 0 and logits_name == 'fuse_' and len(results) < 3:
+                            print(f"\n[SAMPLE PRED] Name: {name}")
+                            print(f"   HYP: {hyp_str}")
+                            print(f"   REF: {ref_str}")
+
+                        results[name][f'{logits_name}gls_hyp'] = hyp_str
+                        results[name]['gls_ref'] = ref_str
             if do_translation:
                 generate_output = model.generate_txt(
                     transformer_inputs=output['transformer_inputs'],
@@ -386,8 +397,11 @@ def evaluate(args, config, dev_dataloader, model, tokenizer, epoch, beam_size=1,
             metric_logger.update(rouge=rouge_score)
 
     if args.run:
-        args.run.log(
-            {'epoch': epoch + 1, 'epoch/dev_loss': output['recognition_loss'].item(), 'wer': evaluation_results['wer']})
+        if is_train:
+            args.run.log({'epoch': epoch + 1, 'train/train_wer': evaluation_results['wer']})
+        else:
+            args.run.log(
+                {'epoch': epoch + 1, 'epoch/dev_loss': output['recognition_loss'].item(), 'wer': evaluation_results['wer']})
     print("* Averaged stats:", metric_logger)
     print('* DEV loss {losses.global_avg:.3f}'.format(losses=metric_logger.loss))
 

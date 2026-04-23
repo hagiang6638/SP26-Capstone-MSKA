@@ -27,6 +27,8 @@ class S2T_Dataset(Dataset.Dataset):
         self.phase = phase
         if config['data']['dataset_name'].lower() == 'csl-daily':
             self.w, self.h = 512, 512
+        elif config['data']['dataset_name'].lower() == 'vcsl':
+            self.w, self.h = 1024, 576
         else:
             self.w, self.h = 210, 260
         self.max_length = config['data']['max_length']

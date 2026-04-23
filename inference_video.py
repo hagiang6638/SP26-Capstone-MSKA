@@ -80,7 +80,7 @@ from Tokenizer import GlossTokenizer_S2G
 # ============================================================
 # CONSTANTS
 # ============================================================
-IMG_W, IMG_H = 210, 260   # kích thước resize frame (Phoenix-2014T)
+IMG_W, IMG_H = 720, 576   # kích thước resize frame (Phoenix-2014T)
 CLIP_LEN      = 400       # max frames model có thể xử lý
 
 VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.webm'}

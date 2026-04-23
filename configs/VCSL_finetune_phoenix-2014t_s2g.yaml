@@ -15,6 +15,7 @@ data:
 
 gloss:
   gloss2id_file: data/VCSL/gloss2ids.pkl
+  lower_case: False
 testing:
   recognition:
     beam_size: 5
@@ -71,6 +72,7 @@ model:
       
     GlossTokenizer:
       gloss2id_file: data/VCSL/gloss2ids.pkl
+      lower_case: False
     body_visual_head:
       input_size: 256
       hidden_size: 512
